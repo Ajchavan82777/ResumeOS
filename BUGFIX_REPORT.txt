@@ -1,0 +1,349 @@
+═══════════════════════════════════════════════════════════════════
+        ResumeOS — Bug Fix Report & Test Checklist
+═══════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A. BUGS FIXED (12 issues)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BUG-01: Dashboard "Create Resume" silently failed
+  Root Cause: Wrong response path. Code used `data.data.resume.id`
+              but API returns `data.resume.id` (one level too deep).
+  Fix:        dashboard/page.tsx — handle both response shapes safely.
+
+BUG-02: Auto-save didn't persist section entries
+  Root Cause: useAutoSave() only saved section metadata (title,
+              visibility, sort_order) but never saved section_entries.
+              All bullet points, job descriptions, and skill tags
+              were lost on page reload.
+  Fix:        useResume.ts — auto-save now iterates section_entries
+              and calls sectionApi.updateEntry() for each one.
+
+BUG-03: Drag-and-drop order not persisted
+  Root Cause: reorderSections() updated Zustand state only.
+              No API call was made to persist the new sort_order.
+  Fix:        EditorPanel.tsx — onDrop() now immediately calls
+              sectionApi.reorder() with the new order array.
+              api.ts — added the missing `sectionApi.reorder()` method.
+
+BUG-04: PDF export always fell back to window.print()
+  Root Cause: exportApi.pdf() call in api.ts was missing
+              `{ responseType: "blob" }`. Axios returned the response
+              as JSON/text, the `instanceof Blob` check always failed,
+              so it always called window.print() instead.
+  Fix:        api.ts — added `responseType: "blob"` and `timeout: 60000`
+              to exportApi.pdf(). BuilderShell.tsx — now opens a styled
+              print-ready HTML window with instructions as reliable fallback.
+
+BUG-05: DOCX export completely fake — no file downloaded
+  Root Cause: Backend export.js returned `res.json({ resume, message })`
+              — just JSON data, no file. Frontend BuilderShell.tsx called
+              the endpoint and showed "DOCX ready!" toast with no download.
+  Fix:        Created src/lib/exportDocx.ts — real client-side DOCX
+              generation using the `docx` npm library (Document, Packer,
+              Paragraph, TextRun, bullet points, tabs, page margins).
+              Backend export.js — also generates server-side DOCX using
+              docx package as primary method, sends binary buffer.
+              BuilderShell.tsx — calls buildDocx() and uses file-saver
+              saveAs() to trigger browser download.
+
+BUG-06: Template switching didn't persist
+  Root Cause: setTheme() only updated resume_customizations (accent_color,
+              font etc.) but never saved template_slug to the resume record.
+              After reload, the resume always reverted to its original template.
+  Fix:        EditorPanel.tsx — handleTemplateChange() calls
+              resumeApi.update(resumeId, { template_slug: slug }) immediately.
+              useAutoSave also saves template_slug on each auto-save.
+
+BUG-07: Manual "Save" button only saved customization
+  Root Cause: handleSave() in BuilderShell.tsx only called
+              resumeApi.updateCustomization() — sections and entries
+              were not saved by the manual save button.
+  Fix:        BuilderShell.tsx — handleSave() now saves customization,
+              template_slug, all sections, and all section entries.
+
+BUG-08: AI "Apply" button did nothing
+  Root Cause: The "Apply to Resume" button in EditorPanel showed
+              `toast.success("Copy the text above to apply it")` —
+              this was a placeholder that never wrote anything to any field.
+  Fix:        EditorPanel.tsx — applyAIResult() now:
+              • summary → writes to summary section data.text
+              • bullets → overwrites first experience entry bullets array
+              • skills  → navigates to skills section with toast guide
+              All changes trigger isDirty=true so auto-save picks them up.
+
+BUG-09: No route guards — protected pages accessible without auth
+  Root Cause: No middleware existed. Any URL was accessible without login.
+  Fix:        src/middleware.ts — Next.js middleware checks for
+              access_token cookie on all /dashboard, /builder, /settings,
+              /admin routes. Redirects to /auth/login?redirect=<path>.
+              useAuth.tsx — sets access_token cookie via document.cookie
+              so middleware can read it.
+
+BUG-10: No resume rename functionality
+  Root Cause: No rename UI or API call existed anywhere.
+  Fix:        dashboard/page.tsx — inline rename with pencil icon on hover.
+              Click pencil → input appears inline → Enter to save →
+              calls resumeApi.update(id, { title }) → refetches list.
+
+BUG-11: No search or sort on dashboard
+  Root Cause: Dashboard showed all resumes in insertion order only.
+  Fix:        dashboard/page.tsx — search input filters by title/template.
+              Sort dropdown: Last Modified / Date Created / Title (A-Z).
+              Empty state when search returns no results.
+              First-time empty state with CTA.
+
+BUG-12: ATS score logic unreliable
+  Root Cause: calcAtsScore() was checking section_entries.length > 0 but
+              entries could be undefined when sections first load. Also
+              lacked granular scoring for email vs phone separately, weak
+              verb detection, and proper null guards.
+  Fix:        atsScore.ts — complete rewrite with:
+              • getEntries() helper with null guard
+              • Granular contact scoring (name/email/phone separate)
+              • Bullet count check (hasBullets)
+              • Weak verb detection ("responsible for", "helped with")
+              • More accurate breakdown percentages
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+B. NEW FEATURES ADDED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Cover Letter Builder page (/cover-letters)
+  Full CRUD: create, edit, save, delete. AI generation via Claude.
+  PDF export via print window. Linked to user account.
+
+• Protected route middleware (src/middleware.ts)
+  Next.js edge middleware guards auth-required pages.
+
+• Resume rename inline UI
+  Pencil icon on hover → inline input → Enter/Escape to confirm/cancel.
+
+• Dashboard search + sort
+  Search by title, sort by date modified / created / title.
+
+• Real-time relative timestamps on dashboard
+  "2h ago", "3d ago" instead of raw date strings.
+
+• Design panel: custom color picker
+  "+" button opens native color picker for unlimited accent colors.
+
+• Design panel: page size toggle (A4 / Letter)
+  Persists to customization and applies to both preview and export.
+
+• Design panel: Reset to Defaults button
+
+• Builder: Save button disabled when nothing is dirty
+
+• Better error messages
+  Toast errors show API error message when available.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+C. MANUAL TEST CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── AUTH ─────────────────────────────────────────────────────────
+[ ] Register new account → redirected to login
+[ ] Login → redirected to dashboard
+[ ] Logout → redirected to home, cookie cleared
+[ ] Visit /dashboard without login → redirected to /auth/login
+[ ] Visit /builder/[id] without login → redirected to /auth/login
+[ ] Login with wrong password → shows error toast
+[ ] Forgot password → email sent confirmation shown
+[ ] Session persists on page refresh (localStorage + cookie)
+
+── RESUME CRUD ──────────────────────────────────────────────────
+[ ] Create new resume → navigated to builder
+[ ] Builder loads: sections appear in left panel
+[ ] Resume title shows in topbar
+[ ] Dashboard shows new resume card
+[ ] Open existing resume → all data loads correctly
+[ ] Rename: pencil icon appears on hover, inline edit, Enter saves
+[ ] Duplicate: creates copy with "(Copy)" suffix
+[ ] Delete: confirm dialog → removed from list
+
+── SECTIONS ─────────────────────────────────────────────────────
+[ ] Add new section via "+ Add" button → appears in list
+[ ] Click section → form appears below list
+[ ] Edit Personal Info → name updates in preview instantly
+[ ] Edit Summary → text updates in preview instantly
+[ ] Add experience entry → appears in preview
+[ ] Add bullet point → appears in preview
+[ ] Toggle visibility → section hidden in preview
+[ ] Delete section → removed from list and preview
+[ ] Rename section title → updates in preview
+
+── DRAG AND DROP ────────────────────────────────────────────────
+[ ] Drag section up/down → list reorders
+[ ] Preview updates to reflect new order
+[ ] Reload page → order is preserved (was persisted to DB)
+[ ] Drag doesn't break while hovering over other sections
+
+── AUTO-SAVE ────────────────────────────────────────────────────
+[ ] Edit a field → "(unsaved changes)" appears in topbar
+[ ] Wait 2 seconds → auto-save fires, indicator disappears
+[ ] Reload page → all edits are preserved including:
+    - Section text fields
+    - Bullet points
+    - Skill tags
+    - Entry dates
+
+── MANUAL SAVE ──────────────────────────────────────────────────
+[ ] Click Save button → saves immediately
+[ ] Save button shows "Saved ✓" when nothing is dirty
+[ ] Save button disabled when already saving
+
+── TEMPLATE SWITCHING ───────────────────────────────────────────
+[ ] Click template in Templates panel → preview updates
+[ ] Accent color updates to template's default color
+[ ] Reload page → selected template is preserved
+[ ] Different templates show in preview correctly
+
+── DESIGN CUSTOMIZATION ─────────────────────────────────────────
+[ ] Change accent color → preview updates instantly
+[ ] Change font family → preview updates
+[ ] Change font size → preview updates
+[ ] Change line spacing → preview updates
+[ ] Change margins → preview updates
+[ ] Toggle A4/Letter → page size updates
+[ ] Toggle density → spacing updates
+[ ] Custom color picker → arbitrary color applied
+[ ] Reset to Defaults → all settings restored
+[ ] Reload page → all customization preserved
+
+── PDF EXPORT ───────────────────────────────────────────────────
+[ ] Click "Export PDF" → print window opens
+[ ] Print window shows resume with correct formatting
+[ ] Instructions visible: "Press Ctrl+P → Save as PDF"
+[ ] All sections render in print window
+[ ] Accent color matches design settings
+[ ] Fonts and spacing correct
+
+── DOCX EXPORT ──────────────────────────────────────────────────
+[ ] Click "DOCX" → file downloads as .docx
+[ ] File opens in Microsoft Word / LibreOffice
+[ ] Name, title, contact info present
+[ ] All sections present (Summary, Experience, Education, Skills)
+[ ] Bullet points formatted correctly
+[ ] Font size and margins respected
+
+── ATS SCORE ────────────────────────────────────────────────────
+[ ] Score ring shows correct score (0-100)
+[ ] Score updates when sections are edited
+[ ] Score bar breakdown matches visible sections
+[ ] Suggestions are relevant to actual missing content
+[ ] Weak verb detection: add "responsible for" → suggestion appears
+[ ] Score is NOT static/hardcoded
+
+── JOB DESCRIPTION MATCHING ─────────────────────────────────────
+[ ] Paste job description → click Analyze
+[ ] Match percentage shown
+[ ] Found keywords listed in green
+[ ] Missing keywords listed in red
+[ ] Recommendations shown
+[ ] "Analyze Different Job" resets the view
+
+── AI ASSISTANT ─────────────────────────────────────────────────
+[ ] "Generate Professional Summary" → result appears
+[ ] Click "Apply to Resume" → summary section updates
+[ ] "Improve Bullet Points" → result appears
+[ ] Click "Apply to Resume" → first experience entry bullets updated
+[ ] "Suggest Skills" → skills listed in result
+[ ] AI error shows helpful message about ANTHROPIC_API_KEY
+
+── DASHBOARD FEATURES ───────────────────────────────────────────
+[ ] Search box filters resumes by title
+[ ] "No resumes match" empty state shown when search empty
+[ ] Clear search restores full list
+[ ] Sort by "Last Modified" works
+[ ] Sort by "Date Created" works
+[ ] Sort by "Title (A-Z)" works
+[ ] Relative timestamps: "2h ago", "3d ago" etc.
+[ ] ATS score badge shows on resume card (when > 0)
+
+── COVER LETTERS ────────────────────────────────────────────────
+[ ] Navigate to /cover-letters
+[ ] Create new cover letter
+[ ] Enter job title + company
+[ ] Click "Generate with AI" → content generated
+[ ] Edit content manually
+[ ] Save → appears in left list
+[ ] Click letter in list → loads into editor
+[ ] Delete cover letter → removed from list
+[ ] Export PDF → print window opens
+
+── SETTINGS ─────────────────────────────────────────────────────
+[ ] Profile form loads with existing data
+[ ] Edit full name → save → toast confirmation
+[ ] Profile data persists after page reload
+[ ] Send reset email button works
+[ ] Subscription plan shows correctly (Free/Pro)
+[ ] Sign Out works correctly
+
+── ROUTE PROTECTION ─────────────────────────────────────────────
+[ ] /dashboard without auth → /auth/login
+[ ] /builder/[id] without auth → /auth/login
+[ ] /settings without auth → /auth/login
+[ ] /admin without auth → /auth/login
+[ ] /auth/login with active session → /dashboard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+D. KNOWN LIMITATIONS & FUTURE WORK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CURRENT LIMITATIONS:
+1. PDF export relies on client-side print dialog (Puppeteer optional)
+   → Install puppeteer in backend for true server-side PDF
+   → Run: cd backend && npm install puppeteer
+
+2. DOCX on server requires docx package in backend
+   → Run: cd backend && npm install docx
+
+3. Drag-and-drop entries (within a section) not yet implemented
+   → Sections can be reordered; individual entries cannot
+
+4. Resume version history (save snapshots, restore previous)
+   → Schema table exists (resume_versions) but UI not built
+
+5. Share link UI not yet built (API exists in backend)
+   → /api/shared/* routes work, but no frontend page
+
+6. LinkedIn import is UI placeholder only (no actual OAuth flow)
+
+7. Multi-page resume preview scaling
+   → Preview shows correct content but doesn't paginate visually
+
+RECOMMENDED NEXT STEPS:
+• Add puppeteer to backend for true PDF (not print dialog)
+• Build share link UI (/r/[slug] public page)
+• Add entry-level drag-and-drop (within sections)
+• Add version history sidebar in builder
+• Add LinkedIn OAuth import
+• Add Stripe integration for subscription billing
+• Add email notifications (welcome, export confirmation)
+• Write unit tests for atsScore.ts and exportDocx.ts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+E. FILES CHANGED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend (11 files changed/added):
+  • src/app/dashboard/page.tsx          FIXED (BUG-01, BUG-10, BUG-11)
+  • src/app/settings/page.tsx           FIXED (connected to API)
+  • src/app/cover-letters/page.tsx      NEW   (full CRUD + AI + export)
+  • src/components/builder/BuilderShell.tsx FIXED (BUG-04, BUG-05, BUG-07)
+  • src/components/builder/EditorPanel.tsx  FIXED (BUG-03, BUG-06, BUG-08)
+  • src/components/layout/TopNav.tsx    FIXED (cover letters link, admin)
+  • src/hooks/useAuth.tsx               FIXED (BUG-09 cookie for middleware)
+  • src/hooks/useResume.ts              FIXED (BUG-02, BUG-03 autosave)
+  • src/lib/api.ts                      FIXED (BUG-04 blob, BUG-03 reorder)
+  • src/lib/atsScore.ts                 FIXED (BUG-12)
+  • src/lib/exportDocx.ts               NEW   (BUG-05 real DOCX)
+  • src/middleware.ts                   NEW   (BUG-09 route guards)
+
+Backend (2 files changed):
+  • src/routes/export.js                FIXED (BUG-05 real DOCX generation)
+  • package.json                        UPDATED (added docx dependency)
+
+Documentation:
+  • BUGFIX_REPORT.txt                   NEW   (this file)
