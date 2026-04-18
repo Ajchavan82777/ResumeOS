@@ -1,0 +1,117 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              ResumeOS — Quick Start Guide                       ║
+╚══════════════════════════════════════════════════════════════════╝
+
+ADMIN CREDENTIALS
+────────────────────────────────────────────────────────────────────
+  Email    : admin@resumeos.com
+  Password : Admin@123456
+  Plan     : Pro (all features enabled)
+
+═══════════════════════════════════════════════════════════════════
+FIRST-TIME SETUP  (run once)
+═══════════════════════════════════════════════════════════════════
+
+STEP 1 — Install Node.js v18+
+  https://nodejs.org/en/download
+
+STEP 2 — Create Supabase project
+  1. https://app.supabase.com → create free project
+  2. SQL Editor → New query
+  3. Paste ALL of: backend/src/db/schema.sql → Run
+     (this file now includes the AI settings table too — one file only!)
+  4. Note your URL, anon key, service_role key
+
+STEP 3 — Run the setup wizard
+  Windows:   Double-click SETUP.bat
+  Mac/Linux: bash start.sh
+
+  Or manually:
+    cp backend/.env.example backend/.env
+    → fill in SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY
+    cp frontend/.env.example frontend/.env.local
+
+STEP 4 — Start the app
+  Windows:   Double-click START.bat
+  Mac/Linux: bash start.sh
+
+═══════════════════════════════════════════════════════════════════
+ENABLING AI FEATURES  (after the app is running)
+═══════════════════════════════════════════════════════════════════
+
+  ⚠️  AI is DISABLED by default. No API key required to start.
+  ⚠️  NEVER put your API key in .env — use the Admin Panel instead.
+
+  1. Open: http://localhost:3000/admin
+  2. Login as admin@resumeos.com / Admin@123456
+  3. Click "AI Settings" tab
+  4. Choose a provider:
+       • Anthropic (Claude) — console.anthropic.com/settings/keys
+       • OpenAI (ChatGPT)   — platform.openai.com/api-keys
+       • OpenRouter         — openrouter.ai/keys (100+ models, best value)
+  5. Select a model (recommended: claude-3-5-haiku or gpt-4o-mini for cost)
+  6. Paste your API key → click Save Settings
+  7. Click Test to verify connection
+  8. Toggle "AI Features" ON
+  9. Done! Users now see AI buttons in the resume builder.
+
+  To disable AI for all users: toggle "AI Features" OFF in Admin Panel.
+  Admin can re-enable anytime without restarting the server.
+
+═══════════════════════════════════════════════════════════════════
+URLS
+═══════════════════════════════════════════════════════════════════
+
+  App          http://localhost:3000
+  Login        http://localhost:3000/auth/login
+  Dashboard    http://localhost:3000/dashboard
+  Builder      http://localhost:3000/builder/new
+  Cover Letters http://localhost:3000/cover-letters
+  Pricing      http://localhost:3000/pricing
+  Admin Panel  http://localhost:3000/admin
+  Settings     http://localhost:3000/settings
+  API Health   http://localhost:5000/health
+
+═══════════════════════════════════════════════════════════════════
+AI PROVIDER COMPARISON
+═══════════════════════════════════════════════════════════════════
+
+  Provider     Model               Cost/1K tokens  Notes
+  ─────────────────────────────────────────────────────────────────
+  Anthropic    claude-3-5-haiku    $0.0008         Fastest/cheapest
+  Anthropic    claude-3-5-sonnet   $0.003          Best quality ⭐
+  OpenAI       gpt-4o-mini         $0.0006         Good & cheap
+  OpenAI       gpt-4o              $0.005          High quality
+  OpenRouter   openai/gpt-4o-mini  $0.0006         Multi-model hub
+  OpenRouter   meta-llama/...      FREE tier       Llama models
+
+  Each AI action uses ~300-800 tokens = $0.0002-$0.006 per use
+
+═══════════════════════════════════════════════════════════════════
+FEATURES
+═══════════════════════════════════════════════════════════════════
+
+✅ Auth          Login, register, logout, session restore, route guards
+✅ Resume CRUD   Create, edit, autosave, rename, duplicate, delete
+✅ Sections      All 9 types + drag-drop reorder + visibility toggle
+✅ Templates     6 ATS-friendly templates, persisted per resume
+✅ Design        Accent color, font, size, spacing, margins, density
+✅ PDF Export    Print-ready window with Ctrl+P → Save as PDF
+✅ DOCX Export   Real .docx file download using docx library
+✅ ATS Score     Live 0-100 score, breakdowns, weak verb detection
+✅ AI (admin)    Disabled by default, admin enables via Admin Panel
+✅ JD Matching   Keyword analysis (requires AI to be enabled)
+✅ Cover Letters Full CRUD, AI generation, PDF export
+✅ Dashboard     Search, sort, inline rename, timestamps
+✅ Admin Panel   AI settings, user list, feature flags, usage logs
+
+═══════════════════════════════════════════════════════════════════
+STOPPING / RESEED
+═══════════════════════════════════════════════════════════════════
+
+  Stop:    STOP.bat (Windows) or Ctrl+C in each terminal
+  Reseed:  SEED_ADMIN.bat or: cd backend && npm run seed
+
+╔══════════════════════════════════════════════════════════════════╗
+║  admin@resumeos.com / Admin@123456  — AI configured in /admin   ║
+╚══════════════════════════════════════════════════════════════════╝
