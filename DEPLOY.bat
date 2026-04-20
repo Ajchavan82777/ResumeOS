@@ -6,14 +6,14 @@ if not "%~1"=="LAUNCHED" (
 )
 
 setlocal EnableDelayedExpansion
-title ResumeOS - Deploy to Vercel
+title ResumeOS - Deploy to Vercel via GitHub
 
 set "ROOT=%~dp0"
 set "FRONTEND=%ROOT%frontend"
 
 echo.
 echo  ==========================================
-echo   ResumeOS - Deploy Frontend to Vercel
+echo   ResumeOS - Push to GitHub + Vercel
 echo  ==========================================
 echo.
 
@@ -26,26 +26,16 @@ if !ERRORLEVEL! NEQ 0 (
 for /f "tokens=*" %%v in ('node --version') do set NODE_VER=%%v
 echo  [OK] Node  !NODE_VER!
 
-:: ── 2. Vercel CLI check ────────────────────────────────────────────────────
-call vercel --version >nul 2>&1
-if !ERRORLEVEL! NEQ 0 goto :install_vercel
-for /f "tokens=*" %%v in ('cmd /c vercel --version 2^>nul') do set VER_VER=%%v
-echo  [OK] Vercel !VER_VER!
-goto :deps
-
-:install_vercel
-echo.
-echo  [INFO] Vercel CLI not found. Installing globally...
-call npm install -g vercel
+:: ── 2. Git check ──────────────────────────────────────────────────────────
+git --version >nul 2>&1
 if !ERRORLEVEL! NEQ 0 (
-    echo  [ERROR] Failed to install Vercel CLI.
-    echo          Try manually:  npm install -g vercel
+    echo  [ERROR] Git not found. Download: https://git-scm.com
     goto :done
 )
-echo  [OK] Vercel CLI installed.
+for /f "tokens=3" %%v in ('git --version') do set GIT_VER=%%v
+echo  [OK] Git   !GIT_VER!
 
 :: ── 3. Frontend dependencies ───────────────────────────────────────────────
-:deps
 echo.
 echo  [STEP 1/4] Checking frontend dependencies...
 cd /d "%FRONTEND%"
@@ -65,8 +55,7 @@ echo.
 echo  [STEP 2/4] Type-checking (all errors shown at once)...
 echo.
 call npx tsc --noEmit 2>&1
-set TSC_ERR=!ERRORLEVEL!
-if !TSC_ERR! NEQ 0 (
+if !ERRORLEVEL! NEQ 0 (
     echo.
     echo  ==========================================
     echo   TYPE ERRORS FOUND - fix all above then
@@ -89,32 +78,65 @@ if !ERRORLEVEL! NEQ 0 (
 echo.
 echo  [OK] Build passed.
 
-:: ── 6. Vercel deploy ───────────────────────────────────────────────────────
+:: ── 6. Git push to GitHub ─────────────────────────────────────────────────
 echo.
-echo  [STEP 4/4] Deploying to Vercel...
+echo  [STEP 4/4] Pushing to GitHub (Vercel will auto-deploy)...
 echo.
-echo  NOTE: If prompted, log in and select your project.
+
+cd /d "%ROOT%"
+
+:: Check if there are any changes to commit
+git status --short > "%TEMP%\git_status.txt" 2>&1
+set /p GIT_CHANGES=<"%TEMP%\git_status.txt"
+if "!GIT_CHANGES!"=="" (
+    echo  [INFO] No changes to commit. Checking if push is needed...
+) else (
+    :: Ask for commit message
+    echo  Changes detected:
+    git status --short
+    echo.
+    set /p COMMIT_MSG=  Enter commit message (or press Enter for default):
+
+    if "!COMMIT_MSG!"=="" (
+        :: Default message with date and time
+        for /f "tokens=1-3 delims=/ " %%a in ('date /t') do set TODAY=%%c-%%b-%%a
+        for /f "tokens=1-2 delims=: " %%a in ('time /t') do set NOW=%%a:%%b
+        set COMMIT_MSG=Update: !TODAY! !NOW!
+    )
+
+    echo.
+    echo  Staging all changes...
+    git add -A
+    if !ERRORLEVEL! NEQ 0 ( echo  [ERROR] git add failed. & goto :done )
+
+    echo  Committing: "!COMMIT_MSG!"
+    git commit -m "!COMMIT_MSG!"
+    if !ERRORLEVEL! NEQ 0 ( echo  [ERROR] git commit failed. & goto :done )
+    echo  [OK] Committed.
+)
+
+:: Push to GitHub
 echo.
-call vercel --prod
+echo  Pushing to GitHub...
+git push
 if !ERRORLEVEL! NEQ 0 (
     echo.
-    echo  [ERROR] Deploy failed. Run these first then try again:
-    echo    vercel login
-    echo    cd frontend ^& vercel link
+    echo  [ERROR] git push failed. Try:
+    echo    git remote -v           (check remote is set)
+    echo    git push -u origin main (first-time push)
     goto :done
 )
 
 echo.
 echo  ==========================================
-echo   Deployed successfully!
+echo   Done! Changes pushed to GitHub.
 echo.
-echo   Set these in Vercel Dashboard
-echo   Project Settings ^> Environment Variables:
+echo   Vercel is now auto-deploying your site.
+echo   Check progress at:
+echo   https://vercel.com/dashboard
 echo.
-echo     NEXT_PUBLIC_API_URL           your backend URL
-echo     NEXT_PUBLIC_SUPABASE_URL
-echo     NEXT_PUBLIC_SUPABASE_ANON_KEY
-echo     NEXT_PUBLIC_APP_URL           your Vercel domain
+echo   Your repo:
+echo   https://github.com/Ajchavan82777/ResumeOS
 echo  ==========================================
 
 :done
