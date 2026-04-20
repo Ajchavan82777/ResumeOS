@@ -114,9 +114,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav />
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl font-bold text-gray-900">
               {greeting()}, {profile?.full_name?.split(" ")[0] || "there"} 👋
@@ -124,13 +124,13 @@ export default function DashboardPage() {
             <p className="mt-1 text-sm text-gray-400">Manage and export your professional resumes</p>
           </div>
           <button onClick={handleCreate} disabled={creating}
-            className="flex items-center gap-2 rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-600 disabled:opacity-60">
+            className="flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-600 disabled:opacity-60 sm:self-start">
             <Plus size={16} /> {creating ? "Creating…" : "New Resume"}
           </button>
         </div>
 
         {/* Stats */}
-        <div className="mb-8 grid grid-cols-3 gap-4">
+        <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {stats.map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="rounded-2xl border border-gray-200 bg-white p-5">
               <div className="flex items-center gap-3">
@@ -147,8 +147,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Search + Sort bar */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="relative max-w-xs flex-1">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[180px]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               value={search}
@@ -174,7 +174,7 @@ export default function DashboardPage() {
             Loading resumes…
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Create card */}
             <button onClick={handleCreate}
               className="flex h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 transition hover:border-teal-400 hover:bg-teal-50 hover:text-teal-500">
@@ -272,7 +272,7 @@ export default function DashboardPage() {
 
             {/* Empty search state */}
             {!isLoading && filtered.length === 0 && resumes.length > 0 && (
-              <div className="col-span-4 flex flex-col items-center justify-center py-16 text-gray-400">
+              <div className="col-span-2 md:col-span-4 flex flex-col items-center justify-center py-16 text-gray-400">
                 <Search size={32} className="mb-3 opacity-40" />
                 <p className="text-sm">No resumes match &ldquo;{search}&rdquo;</p>
                 <button onClick={() => setSearch("")} className="mt-2 text-xs text-teal-500 hover:underline">
@@ -283,7 +283,7 @@ export default function DashboardPage() {
 
             {/* First-time empty state */}
             {!isLoading && resumes.length === 0 && (
-              <div className="col-span-4 flex flex-col items-center justify-center py-20 text-gray-400">
+              <div className="col-span-2 md:col-span-4 flex flex-col items-center justify-center py-20 text-gray-400">
                 <FileText size={40} className="mb-4 opacity-30" />
                 <p className="mb-2 text-base font-medium text-gray-600">No resumes yet</p>
                 <p className="mb-5 text-sm">Create your first resume to get started</p>

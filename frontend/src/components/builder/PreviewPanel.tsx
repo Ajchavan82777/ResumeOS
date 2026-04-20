@@ -17,6 +17,8 @@ export function PreviewPanel() {
   const [zoom, setZoom] = useState(72);
   const [innerH, setInnerH] = useState(PAGE_H);
   const innerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const userZoomed = useRef(false);
 
   const template = resume?.template_slug || "two-column-dark";
   const theme = resume?.resume_customizations;
@@ -25,6 +27,20 @@ export function PreviewPanel() {
   const scaledW = PAGE_W * scale;
   const scaledH = innerH * scale;
   const numPages = Math.ceil(innerH / PAGE_H);
+
+  // Auto-fit zoom to container width; manual zoom buttons disable auto-fit
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => {
+      if (userZoomed.current) return;
+      const w = el.clientWidth;
+      const ideal = Math.floor((w - 48) / PAGE_W * 100);
+      setZoom(Math.max(30, Math.min(150, ideal)));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   // Track actual resume content height via ResizeObserver
   useEffect(() => {
@@ -55,14 +71,14 @@ export function PreviewPanel() {
         )}
         <div className="ml-auto flex items-center gap-2">
           <button
-            onClick={() => setZoom((z) => Math.max(30, z - 10))}
+            onClick={() => { userZoomed.current = true; setZoom((z) => Math.max(30, z - 10)); }}
             className="flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100 transition"
           >
             <ZoomOut size={13} />
           </button>
           <span className="w-10 text-center font-mono text-xs">{zoom}%</span>
           <button
-            onClick={() => setZoom((z) => Math.min(150, z + 10))}
+            onClick={() => { userZoomed.current = true; setZoom((z) => Math.min(150, z + 10)); }}
             className="flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100 transition"
           >
             <ZoomIn size={13} />
@@ -71,7 +87,7 @@ export function PreviewPanel() {
       </div>
 
       {/* Scrollable preview area */}
-      <div className="no-print flex-1 overflow-auto bg-[#E8EAED]">
+      <div ref={containerRef} className="no-print flex-1 overflow-auto bg-[#E8EAED]">
         <div
           style={{
             minHeight: "100%",

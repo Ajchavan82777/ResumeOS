@@ -85,35 +85,28 @@ echo.
 
 cd /d "%ROOT%"
 
-:: Check if there are any changes to commit
-git status --short > "%TEMP%\git_status.txt" 2>&1
-set /p GIT_CHANGES=<"%TEMP%\git_status.txt"
-if "!GIT_CHANGES!"=="" (
-    echo  [INFO] No changes to commit. Checking if push is needed...
-) else (
-    :: Ask for commit message
-    echo  Changes detected:
-    git status --short
-    echo.
-    set /p COMMIT_MSG=  Enter commit message (or press Enter for default):
+:: Show current status
+echo  Changed files:
+git status --short
+echo.
 
-    if "!COMMIT_MSG!"=="" (
-        :: Default message with date and time
-        for /f "tokens=1-3 delims=/ " %%a in ('date /t') do set TODAY=%%c-%%b-%%a
-        for /f "tokens=1-2 delims=: " %%a in ('time /t') do set NOW=%%a:%%b
-        set COMMIT_MSG=Update: !TODAY! !NOW!
-    )
+:: Stage all changes
+git add -A
+if !ERRORLEVEL! NEQ 0 ( echo  [ERROR] git add failed. & goto :done )
 
-    echo.
-    echo  Staging all changes...
-    git add -A
-    if !ERRORLEVEL! NEQ 0 ( echo  [ERROR] git add failed. & goto :done )
+:: Ask for commit message
+set /p COMMIT_MSG=  Enter commit message (or press Enter for default):
 
-    echo  Committing: "!COMMIT_MSG!"
-    git commit -m "!COMMIT_MSG!"
-    if !ERRORLEVEL! NEQ 0 ( echo  [ERROR] git commit failed. & goto :done )
-    echo  [OK] Committed.
+if "!COMMIT_MSG!"=="" (
+    for /f "tokens=1-3 delims=/ " %%a in ('date /t') do set TODAY=%%c-%%b-%%a
+    for /f "tokens=1-2 delims=: " %%a in ('time /t') do set NOW=%%a:%%b
+    set COMMIT_MSG=Update: !TODAY! !NOW!
 )
+
+echo.
+echo  Committing: "!COMMIT_MSG!"
+git commit -m "!COMMIT_MSG!"
+:: Exit code 1 just means "nothing to commit" — not a real error, keep going
 
 :: Push to GitHub
 echo.

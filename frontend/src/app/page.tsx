@@ -40,7 +40,7 @@ export default function HomePage() {
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-teal-50 px-4 py-1.5 text-xs font-semibold text-teal-700 border border-teal-200">
             ⭐ Trusted by 50,000+ job seekers worldwide
           </div>
-          <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight text-gray-900 mb-5">
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold leading-tight tracking-tight text-gray-900 mb-5">
             Build a Resume That<br /><em className="not-italic text-teal-500">Gets You Hired</em>
           </h1>
           <p className="mx-auto mb-8 max-w-xl text-lg text-gray-500 leading-relaxed">
@@ -65,9 +65,9 @@ export default function HomePage() {
 
       {/* ── STATS ── */}
       <section className="border-y border-gray-100 bg-gray-50">
-        <div className="mx-auto grid max-w-4xl grid-cols-4">
+        <div className="mx-auto grid max-w-4xl grid-cols-2 sm:grid-cols-4">
           {STATS.map(({ value, label }) => (
-            <div key={label} className="border-r border-gray-100 px-8 py-8 text-center last:border-r-0">
+            <div key={label} className="border-r border-gray-100 px-4 sm:px-8 py-6 sm:py-8 text-center last:border-r-0">
               <div className="font-serif text-3xl font-bold text-teal-500 mb-1">{value}</div>
               <div className="text-sm text-gray-400">{label}</div>
             </div>
@@ -80,7 +80,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl">
           <h2 className="font-serif text-3xl font-bold text-center text-gray-900 mb-3">Everything You Need to Land the Job</h2>
           <p className="text-center text-gray-400 text-sm mb-12">A complete toolkit for every career stage</p>
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {FEATURES.map((f) => (
               <div key={f.title} className="rounded-2xl border-2 border-gray-100 bg-white p-6 transition hover:border-teal-200 hover:shadow-card-md">
                 <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl text-xl ${f.color}`}>{f.icon}</div>
@@ -97,7 +97,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-4xl">
           <h2 className="font-serif text-3xl font-bold text-center text-gray-900 mb-3">How It Works</h2>
           <p className="text-center text-gray-400 text-sm mb-14">From blank page to polished resume in 3 simple steps</p>
-          <div className="grid grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10">
             {STEPS.map((s) => (
               <div key={s.num} className="text-center">
                 <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 font-serif text-xl font-bold text-teal-500">{s.num}</div>

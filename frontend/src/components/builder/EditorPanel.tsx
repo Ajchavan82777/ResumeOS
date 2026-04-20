@@ -361,7 +361,7 @@ export function EditorPanel({ resumeId }: EditorPanelProps) {
   };
 
   return (
-    <div className="flex w-[320px] min-w-[320px] flex-col overflow-hidden border-r border-gray-200 bg-white">
+    <div className="flex w-full md:w-[320px] md:min-w-[320px] flex-col overflow-hidden border-r border-gray-200 bg-white">
 
       {/* ══ SECTIONS ══════════════════════════════════════════════════════════ */}
       {activePanel === "sections" && (

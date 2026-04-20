@@ -287,7 +287,7 @@ export function BuilderShell({ resumeId }: BuilderShellProps) {
         </div>
 
         {/* Editor panel — hidden on mobile when preview is shown */}
-        <div className={`${showPreview ? "hidden md:flex" : "flex"} flex-col flex-shrink-0`}>
+        <div className={`${showPreview ? "hidden md:flex" : "flex"} flex-col w-full md:w-auto`}>
           <EditorPanel resumeId={resumeId} />
         </div>
 
